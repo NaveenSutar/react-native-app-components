@@ -5,7 +5,7 @@ import {
   FlatList,
   Text,
   ImageBackground,
-  Image,
+  Platform,
 } from 'react-native';
 import Header from '../baseComponents/Header';
 import {ScreenWidth} from '../utils/appUtils';
@@ -63,6 +63,7 @@ const StickyHeaderCards = () => {
       backgroundImage: require('../assets/images/stickyHeaderCards/card_5.jpg'),
     },
   ];
+
   const renderComponent = () => {
     return (
       <FlatList
@@ -88,7 +89,7 @@ const StickyHeaderCards = () => {
                     <Text style={styles.cardExpire}>{item.expire}</Text>
                     <Text style={styles.cardCVV}>{item.cvv}</Text>
                   </View>
-                  <Text style={styles.cardName}>{item.name}</Text>
+                  <Text style={styles.cardName}>{item.name.toUpperCase()}</Text>
                 </View>
               </View>
             </ImageBackground>
@@ -121,14 +122,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     width: ScreenWidth - 32,
     overflow: 'hidden',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   },
   imageBackground: {
     width: ScreenWidth - 32,
@@ -165,6 +158,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
     letterSpacing: 2,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   cardBottomRow: {
     flexDirection: 'row',
@@ -185,6 +179,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#ffffff',
     fontWeight: '700',
+    fontFamily: Platform.OS === 'ios' ? 'Arial' : 'notoserif',
   },
 });
 
