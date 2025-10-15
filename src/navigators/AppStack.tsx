@@ -17,6 +17,7 @@ import BufferVideoPlayer from '../components/BufferVideoPlayer';
 import SmartVideoPlayer from '../components/SmartVideoPlayer';
 import Masonry from '../components/Masonry';
 import GridFeed from '../components/GridFeed';
+import StickyHeaderCards from '../components/StickyHeaderCards';
 
 const Stack = createNativeStackNavigator();
 
@@ -48,6 +49,7 @@ function AppStack() {
         <Stack.Screen name="SmartVideoPlayer" component={SmartVideoPlayer} />
         <Stack.Screen name="Masonry" component={Masonry} />
         <Stack.Screen name="GridFeed" component={GridFeed} />
+        <Stack.Screen name="StickyHeaderCards" component={StickyHeaderCards} />
       </Stack.Navigator>
     </View>
   );

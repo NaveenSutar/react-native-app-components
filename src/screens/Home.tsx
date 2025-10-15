@@ -98,6 +98,12 @@ const Home = () => {
       title: 'Grid Feed',
       screen: 'GridFeed',
     },
+    {
+      id: 15,
+      icon: require('../assets/icons/sticky-cards.png'),
+      title: 'Sticky Header Cards',
+      screen: 'StickyHeaderCards',
+    },
   ];
 
   const renderItem = ({
