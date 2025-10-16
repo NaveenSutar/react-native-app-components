@@ -45,7 +45,11 @@ const UserSelector: React.FC<UserSelectorProps> = ({
       <TouchableOpacity
         style={[styles.userItem, isSelected && styles.selectedUserItem]}
         onPress={() => handleSelectUser(item.value)}>
-        <Text style={[styles.userItemText, isSelected && styles.selectedUserItemText]}>
+        <Text
+          style={[
+            styles.userItemText,
+            isSelected && styles.selectedUserItemText,
+          ]}>
           {item.label}
         </Text>
         {isSelected && <Text style={styles.checkmark}>✓</Text>}
@@ -60,7 +64,11 @@ const UserSelector: React.FC<UserSelectorProps> = ({
         style={[styles.selector, disabled && styles.selectorDisabled]}
         onPress={() => !disabled && setIsModalVisible(true)}
         disabled={disabled}>
-        <Text style={[styles.selectorText, disabled && styles.selectorTextDisabled]}>
+        <Text
+          style={[
+            styles.selectorText,
+            disabled && styles.selectorTextDisabled,
+          ]}>
           {selectedUserLabel}
         </Text>
         <Text style={styles.arrow}>▼</Text>
@@ -71,7 +79,9 @@ const UserSelector: React.FC<UserSelectorProps> = ({
         transparent
         animationType="fade"
         onRequestClose={() => setIsModalVisible(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setIsModalVisible(false)}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setIsModalVisible(false)}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select User</Text>
