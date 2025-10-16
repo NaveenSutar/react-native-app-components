@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Header from '../baseComponents/Header';
-import ChatMessage from './ChatMessage';
+
 import UserSelector from './UserSelector';
 import {ChatWebSocketService} from '../services/ChatWebSocketService';
 import {
@@ -22,6 +22,7 @@ import {
   ControlMessage,
 } from '../types/chat.types';
 import {WEBSOCKET_CONFIG} from '../config/websocket.config';
+import ChatMessage from '../baseComponents/ChatMessage';
 
 const SmartChat = () => {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
@@ -36,6 +37,7 @@ const SmartChat = () => {
 
   const wsServiceRef = useRef<ChatWebSocketService | null>(null);
   const flatListRef = useRef<FlatList>(null);
+  const currentResponseIdRef = useRef<string | null>(null);
 
   const userNames = [
     {id: 1, label: 'Rajesh Nigam', value: 'Rajesh Nigam'},
@@ -79,20 +81,33 @@ const SmartChat = () => {
 
       if (role === 'assistant') {
         setMessages(prev => {
+          // Find the last assistant message that is still being streamed
           const existingIndex = prev.findIndex(
-            msg => msg.role === 'assistant' && !msg.final && msg.isLoading,
+            msg => msg.role === 'assistant' && !msg.final,
           );
 
           if (existingIndex !== -1) {
+            // Update existing message - APPEND new text to existing text
             const updated = [...prev];
+            const existingMessage = updated[existingIndex];
+
+            // APPEND the new chunk to the existing text
+            // Backend sends incremental chunks, not cumulative text
+            const updatedText = final
+              ? text // If final, use the complete text from backend
+              : existingMessage.text + text; // Otherwise, append new chunk
+
             updated[existingIndex] = {
-              ...updated[existingIndex],
-              text,
+              ...existingMessage,
+              id: message.id,
+              text: updatedText, // Use appended text
+              timestamp: message.timestamp,
               final: final || false,
               isLoading: !final,
             };
             return updated;
           } else {
+            // No existing streaming message, create new one
             return [
               ...prev,
               {
@@ -109,6 +124,9 @@ const SmartChat = () => {
 
         if (final) {
           setIsWaitingForResponse(false);
+          currentResponseIdRef.current = null;
+        } else {
+          currentResponseIdRef.current = message.id;
         }
       }
     } else if (message.type === 'control') {
@@ -120,6 +138,7 @@ const SmartChat = () => {
         const errorMsg = controlMessage.payload?.message || 'Unknown error';
         setError(errorMsg);
         setIsWaitingForResponse(false);
+        currentResponseIdRef.current = null;
       }
     } else if (message.type === 'event') {
       console.log('Event:', message.payload);
@@ -157,6 +176,7 @@ const SmartChat = () => {
     setError(null);
     setIsWaitingForResponse(false);
     setInputText('');
+    currentResponseIdRef.current = null;
 
     // Reconnect with new user
     setTimeout(() => {
