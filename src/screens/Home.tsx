@@ -118,7 +118,7 @@ const Home = () => {
     },
     {
       id: 18,
-      icon: require('../assets/icons/sticky-cards.png'),
+      icon: require('../assets/icons/bot.png'),
       title: 'Smart Chat',
       screen: 'SmartChat',
     },

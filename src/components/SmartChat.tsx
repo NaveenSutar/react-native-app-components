@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import Header from '../baseComponents/Header';
 import ChatMessage from './ChatMessage';
+import UserSelector from './UserSelector';
 import {ChatWebSocketService} from '../services/ChatWebSocketService';
 import {
   ChatMessage as ChatMessageType,
@@ -29,6 +30,9 @@ const SmartChat = () => {
     useState<ConnectionStatus>('disconnected');
   const [error, setError] = useState<string | null>(null);
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<string>(
+    WEBSOCKET_CONFIG.USER_NAME,
+  );
 
   const wsServiceRef = useRef<ChatWebSocketService | null>(null);
   const flatListRef = useRef<FlatList>(null);
@@ -57,7 +61,7 @@ const SmartChat = () => {
     wsServiceRef.current = new ChatWebSocketService({
       host: WEBSOCKET_CONFIG.HOST,
       port: WEBSOCKET_CONFIG.PORT,
-      userName: WEBSOCKET_CONFIG.USER_NAME,
+      userName: selectedUser,
       onMessage: handleIncomingMessage,
       onConnectionChange: handleConnectionChange,
       onError: handleError,
@@ -135,6 +139,37 @@ const SmartChat = () => {
     console.error('WebSocket error:', err);
     setError(err.message);
     setIsWaitingForResponse(false);
+  };
+
+  const handleUserChange = (userName: string) => {
+    console.log('Changing user to:', userName);
+
+    // Disconnect current session
+    if (wsServiceRef.current) {
+      wsServiceRef.current.disconnect();
+    }
+
+    // Update selected user
+    setSelectedUser(userName);
+
+    // Clear messages and reset states
+    setMessages([]);
+    setError(null);
+    setIsWaitingForResponse(false);
+    setInputText('');
+
+    // Reconnect with new user
+    setTimeout(() => {
+      wsServiceRef.current = new ChatWebSocketService({
+        host: WEBSOCKET_CONFIG.HOST,
+        port: WEBSOCKET_CONFIG.PORT,
+        userName: userName,
+        onMessage: handleIncomingMessage,
+        onConnectionChange: handleConnectionChange,
+        onError: handleError,
+      });
+      wsServiceRef.current.connect();
+    }, 100);
   };
 
   const handleSendMessage = () => {
@@ -222,9 +257,9 @@ const SmartChat = () => {
   const renderEmptyState = () => {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyTitle}>Start a Conversation</Text>
+        <Text style={styles.emptyTitle}>Say hello to Genie</Text>
         <Text style={styles.emptySubtitle}>
-          Send a message to begin chatting with the AI assistant.
+          Send a message to begin chatting with Genie.
         </Text>
       </View>
     );
@@ -234,6 +269,12 @@ const SmartChat = () => {
     <View style={styles.container}>
       <Header title="Smart Chat" isBackVisible />
       {renderConnectionStatus()}
+      <UserSelector
+        users={userNames}
+        selectedUser={selectedUser}
+        onUserChange={handleUserChange}
+        disabled={connectionStatus === 'connecting'}
+      />
       {renderError()}
 
       <KeyboardAvoidingView
