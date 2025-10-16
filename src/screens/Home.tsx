@@ -101,8 +101,26 @@ const Home = () => {
     {
       id: 15,
       icon: require('../assets/icons/sticky-cards.png'),
-      title: 'Sticky Header Cards',
-      screen: 'StickyHeaderCards',
+      title: 'Stick Center Cards',
+      screen: 'StickCenterCards',
+    },
+    {
+      id: 16,
+      icon: require('../assets/icons/sticky-cards.png'),
+      title: 'Sticky Header Cards V1',
+      screen: 'StickyHeaderCardsVersionOne',
+    },
+    {
+      id: 17,
+      icon: require('../assets/icons/sticky-cards.png'),
+      title: 'Sticky Header Cards V2',
+      screen: 'StickyHeaderCardsVersionTwo',
+    },
+    {
+      id: 18,
+      icon: require('../assets/icons/sticky-cards.png'),
+      title: 'Smart Chat',
+      screen: 'SmartChat',
     },
   ];
 

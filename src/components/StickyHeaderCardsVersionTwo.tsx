@@ -2,16 +2,27 @@ import React from 'react';
 import {
   View,
   StyleSheet,
-  FlatList,
   Text,
   ImageBackground,
   Platform,
+  ScrollView,
 } from 'react-native';
 import Header from '../baseComponents/Header';
 import {ScreenWidth} from '../utils/appUtils';
 
-const StickyHeaderCards = () => {
-  const cardData = [
+interface CardData {
+  id: number;
+  title: string;
+  description: string;
+  cardNumber: string;
+  expire: string;
+  cvv: string;
+  name: string;
+  backgroundImage: any;
+}
+
+const StickyHeaderCardsVersionTwo = () => {
+  const cardData: CardData[] = [
     {
       id: 1,
       title: 'Fi',
@@ -66,80 +77,89 @@ const StickyHeaderCards = () => {
 
   const renderComponent = () => {
     return (
-      <FlatList
-        contentContainerStyle={styles.contentContainer}
-        data={cardData}
-        renderItem={({item}) => (
-          <View style={styles.card}>
-            <ImageBackground
-              source={item.backgroundImage}
-              style={styles.imageBackground}
-              imageStyle={styles.imageStyle}
-              resizeMode="cover">
-              <View style={styles.overlay}>
-                <View style={styles.cardContent}>
-                  <View>
+      <View style={styles.scrollContainer}>
+        <ScrollView
+          style={StyleSheet.absoluteFill}
+          showsVerticalScrollIndicator={true}>
+          {cardData.map(item => (
+            <View key={item.id} style={styles.stickyCard}>
+              <ImageBackground
+                source={item.backgroundImage}
+                style={styles.imageBackground}
+                imageStyle={styles.imageStyle}
+                resizeMode="cover">
+                <View style={styles.overlay}>
+                  <View style={styles.cardContent}>
                     <Text style={styles.cardTitle}>{item.title}</Text>
                     <Text style={styles.cardDescription}>
                       {item.description}
                     </Text>
+                    <View style={[styles.cardDetails]}>
+                      <Text style={styles.cardNumber}>{item.cardNumber}</Text>
+                      <View style={styles.cardBottomRow}>
+                        <Text style={styles.cardExpire}>{item.expire}</Text>
+                        <Text style={styles.cardCVV}>{item.cvv}</Text>
+                      </View>
+                      <Text style={styles.cardName}>
+                        {item.name.toUpperCase()}
+                      </Text>
+                    </View>
                   </View>
-                  <Text style={styles.cardNumber}>{item.cardNumber}</Text>
-                  <View style={styles.cardBottomRow}>
-                    <Text style={styles.cardExpire}>{item.expire}</Text>
-                    <Text style={styles.cardCVV}>{item.cvv}</Text>
-                  </View>
-                  <Text style={styles.cardName}>{item.name.toUpperCase()}</Text>
                 </View>
-              </View>
-            </ImageBackground>
-          </View>
-        )}
-        keyExtractor={item => item.id.toString()}
-      />
+              </ImageBackground>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
     );
   };
 
   return (
     <View style={styles.container}>
-      <Header title="Sticky Header Cards" isBackVisible />
+      <Header title="Sticky Header Cards V2" isBackVisible />
       {renderComponent()}
     </View>
   );
 };
+
+const CARD_HEIGHT_STYLE = (ScreenWidth - 32) / 1.6;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
   },
-  contentContainer: {
+  scrollContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
     paddingTop: 16,
-    alignItems: 'center',
   },
-  card: {
-    borderRadius: 16,
-    marginBottom: 16,
+  stickyCard: {
+    left: 16,
     width: ScreenWidth - 32,
-    overflow: 'hidden',
+    borderRadius: 16,
+    marginTop: 16,
   },
   imageBackground: {
     width: ScreenWidth - 32,
-    height: (ScreenWidth - 32) / 1.6,
-    justifyContent: 'flex-end',
+    height: CARD_HEIGHT_STYLE,
   },
   imageStyle: {
     borderRadius: 16,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: 16,
   },
   cardContent: {
     padding: 20,
-    flex: 1,
+    height: CARD_HEIGHT_STYLE,
     justifyContent: 'space-between',
+  },
+  cardDetails: {
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   cardTitle: {
     fontSize: 24,
@@ -150,25 +170,27 @@ const styles = StyleSheet.create({
   cardDescription: {
     fontSize: 16,
     color: '#ffffff',
-    marginBottom: 20,
+    marginBottom: 8,
     opacity: 0.9,
   },
   cardNumber: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '600',
     color: '#ffffff',
     letterSpacing: 2,
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    marginBottom: 12,
   },
   cardBottomRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8,
   },
   cardExpire: {
     fontSize: 16,
     color: '#ffffff',
     opacity: 0.8,
-    marginRight: 48,
   },
   cardCVV: {
     fontSize: 16,
@@ -176,11 +198,11 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   cardName: {
-    fontSize: 20,
+    fontSize: 18,
     color: '#ffffff',
     fontWeight: '700',
     fontFamily: Platform.OS === 'ios' ? 'Arial' : 'notoserif',
   },
 });
 
-export default StickyHeaderCards;
+export default StickyHeaderCardsVersionTwo;
