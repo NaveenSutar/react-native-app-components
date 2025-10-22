@@ -122,6 +122,12 @@ const Home = () => {
       title: 'Smart Chat',
       screen: 'SmartChat',
     },
+    {
+      id: 19,
+      icon: require('../assets/icons/voice-chat.png'),
+      title: 'Smart Voice Chat',
+      screen: 'SmartVoiceChat',
+    },
   ];
 
   const renderItem = ({
