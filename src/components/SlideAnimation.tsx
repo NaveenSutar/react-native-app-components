@@ -20,7 +20,7 @@ const images = [
   require('./../assets/images/slideAnimAssets/5.png'),
   require('./../assets/images/slideAnimAssets/6.png'),
   require('./../assets/images/slideAnimAssets/7.png'),
-  require('./../assets/images/slideAnimAssets/8.png'),
+  require('./../assets/images/slideAnimAssets/8.jpg'),
 ];
 
 const animationOrder = [0, 1, 2, 5, 4, 3, 6, 7];
