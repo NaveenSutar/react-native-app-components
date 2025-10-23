@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import Header from '../baseComponents/Header';
 
@@ -347,7 +348,10 @@ const SmartChat = () => {
                 connectionStatus !== 'connected' ||
                 isWaitingForResponse
               }>
-              <Text style={styles.sendButtonText}>Send</Text>
+              <Image
+                style={styles.icon}
+                source={require('../assets/icons/send.png')}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -459,8 +463,7 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    padding: 8,
     borderRadius: 20,
     marginLeft: 8,
     justifyContent: 'center',
@@ -473,6 +476,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  icon: {
+    height: 24,
+    width: 24,
+    tintColor: 'white',
   },
 });
 

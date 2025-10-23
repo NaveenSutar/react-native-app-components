@@ -9,16 +9,21 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
+  Image,
 } from 'react-native';
 import Header from '../baseComponents/Header';
 
 import UserSelector from './UserSelector';
 import {ChatWebSocketService} from '../services/ChatWebSocketService';
+import {AudioRecorderService} from '../services/AudioRecorderService';
+import {AudioPlayerService} from '../services/AudioPlayerService';
 import {
   ChatMessage as ChatMessageType,
   ConnectionStatus,
   WebSocketMessage,
   TextMessage,
+  AudioMessage,
   ControlMessage,
 } from '../types/chat.types';
 import {WEBSOCKET_CONFIG} from '../config/websocket.config';
@@ -31,13 +36,17 @@ const SmartVoiceChat = () => {
     useState<ConnectionStatus>('disconnected');
   const [error, setError] = useState<string | null>(null);
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [selectedUser, setSelectedUser] = useState<string>(
     WEBSOCKET_CONFIG.USER_NAME,
   );
 
   const wsServiceRef = useRef<ChatWebSocketService | null>(null);
+  const audioRecorderRef = useRef<AudioRecorderService | null>(null);
+  const audioPlayerRef = useRef<AudioPlayerService | null>(null);
   const flatListRef = useRef<FlatList>(null);
   const currentResponseIdRef = useRef<string | null>(null);
+  const audioSequenceRef = useRef<number>(0);
 
   const userNames = [
     {id: 1, label: 'Rajesh Nigam', value: 'Rajesh Nigam'},
@@ -53,11 +62,38 @@ const SmartVoiceChat = () => {
 
   useEffect(() => {
     initializeWebSocket();
+    initializeAudioServices();
 
     return () => {
       wsServiceRef.current?.disconnect();
+      audioRecorderRef.current?.cleanup();
+      audioPlayerRef.current?.cleanup();
     };
   }, []);
+
+  const initializeAudioServices = () => {
+    // Initialize audio recorder
+    audioRecorderRef.current = new AudioRecorderService({
+      sampleRate: 16000,
+      channels: 1,
+      bitsPerSample: 16,
+      onError: error => {
+        console.error('[SmartVoiceChat] Audio recorder error:', error);
+        setError('Audio recording error: ' + error.message);
+      },
+    });
+
+    // Initialize audio player
+    audioPlayerRef.current = new AudioPlayerService({
+      onPlaybackComplete: () => {
+        console.log('[SmartVoiceChat] Audio playback complete');
+      },
+      onError: error => {
+        console.error('[SmartVoiceChat] Audio player error:', error);
+        setError('Audio playback error: ' + error.message);
+      },
+    });
+  };
 
   const initializeWebSocket = () => {
     wsServiceRef.current = new ChatWebSocketService({
@@ -117,6 +153,8 @@ const SmartVoiceChat = () => {
                 timestamp: message.timestamp,
                 final: final || false,
                 isLoading: !final,
+                audioChunks: [],
+                hasAudio: false,
               },
             ];
           }
@@ -129,6 +167,48 @@ const SmartVoiceChat = () => {
           currentResponseIdRef.current = message.id;
         }
       }
+    } else if (message.type === 'audio') {
+      const audioMessage = message as AudioMessage;
+      const {audio, sequence} = audioMessage.payload;
+
+      console.log('[SmartVoiceChat] Received audio chunk, sequence:', sequence);
+
+      // Add audio chunk to the current assistant message
+      setMessages(prev => {
+        const existingIndex = prev.findIndex(
+          msg => msg.role === 'assistant' && !msg.final,
+        );
+
+        if (existingIndex !== -1) {
+          const updated = [...prev];
+          const existingMessage = updated[existingIndex];
+
+          updated[existingIndex] = {
+            ...existingMessage,
+            audioChunks: [...(existingMessage.audioChunks || []), audio],
+            hasAudio: true,
+          };
+          return updated;
+        } else {
+          // Create new message with audio
+          return [
+            ...prev,
+            {
+              id: message.id,
+              text: '', // Text will come in text messages
+              role: 'assistant',
+              timestamp: message.timestamp,
+              final: false,
+              isLoading: true,
+              audioChunks: [audio],
+              hasAudio: true,
+            },
+          ];
+        }
+      });
+
+      // Queue audio for playback
+      audioPlayerRef.current?.addToQueue(audio);
     } else if (message.type === 'control') {
       const controlMessage = message as ControlMessage;
       if (controlMessage.event === 'ready') {
@@ -208,12 +288,14 @@ const SmartVoiceChat = () => {
       text: inputText.trim(),
       role: 'user',
       timestamp: Date.now(),
+      isVoiceMessage: false,
     };
 
     setMessages(prev => [...prev, userMessage]);
     setIsWaitingForResponse(true);
     setError(null);
 
+    // Send as text with text-only response
     const success = wsServiceRef.current.sendText(inputText.trim(), 'text');
 
     if (!success) {
@@ -226,6 +308,80 @@ const SmartVoiceChat = () => {
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({animated: true});
     }, 100);
+  };
+
+  const handleStartRecording = async () => {
+    try {
+      if (!wsServiceRef.current?.isConnected()) {
+        setError('Not connected to server. Please connect first.');
+        return;
+      }
+
+      console.log('[SmartVoiceChat] Starting recording...');
+      await audioRecorderRef.current?.startRecording();
+      setIsRecording(true);
+      setError(null);
+    } catch (error) {
+      console.error('[SmartVoiceChat] Failed to start recording:', error);
+      setError(
+        'Failed to start recording. Please check microphone permissions.',
+      );
+      setIsRecording(false);
+    }
+  };
+
+  const handleStopRecording = async () => {
+    try {
+      console.log('[SmartVoiceChat] Stopping recording...');
+      const audioBase64 = await audioRecorderRef.current?.stopRecording();
+      setIsRecording(false);
+
+      if (!audioBase64) {
+        setError('No audio recorded');
+        return;
+      }
+
+      if (!wsServiceRef.current?.isConnected()) {
+        setError('Not connected to server. Trying to reconnect...');
+        wsServiceRef.current?.connect();
+        return;
+      }
+
+      // Add user message to UI (voice message)
+      const userMessage: ChatMessageType = {
+        id: `user-${Date.now()}`,
+        text: '[Voice Message]',
+        role: 'user',
+        timestamp: Date.now(),
+        isVoiceMessage: true,
+        hasAudio: true,
+      };
+
+      setMessages(prev => [...prev, userMessage]);
+      setIsWaitingForResponse(true);
+      setError(null);
+
+      // Send audio to backend
+      audioSequenceRef.current++;
+      const success = wsServiceRef.current.sendAudio(
+        audioBase64,
+        audioSequenceRef.current,
+      );
+
+      if (!success) {
+        setError('Failed to send audio. Please try again.');
+        setIsWaitingForResponse(false);
+      }
+
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({animated: true});
+      }, 100);
+    } catch (error) {
+      console.error('[SmartVoiceChat] Failed to stop recording:', error);
+      setError('Failed to send audio message.');
+      setIsRecording(false);
+      setIsWaitingForResponse(false);
+    }
   };
 
   const renderMessage = ({item}: {item: ChatMessageType}) => {
@@ -330,24 +486,54 @@ const SmartVoiceChat = () => {
               multiline
               maxLength={500}
               editable={
-                connectionStatus === 'connected' && !isWaitingForResponse
+                connectionStatus === 'connected' &&
+                !isWaitingForResponse &&
+                !isRecording
               }
             />
+            <TouchableOpacity
+              style={[
+                styles.micButton,
+                isRecording && styles.micButtonRecording,
+                (connectionStatus !== 'connected' || isWaitingForResponse) &&
+                  styles.micButtonDisabled,
+              ]}
+              onPress={isRecording ? handleStopRecording : handleStartRecording}
+              disabled={
+                connectionStatus !== 'connected' || isWaitingForResponse
+              }>
+              {isRecording ? (
+                <Image
+                  style={styles.icon}
+                  source={require('../assets/icons/stop.png')}
+                />
+              ) : (
+                <Image
+                  style={styles.icon}
+                  source={require('../assets/icons/mic.png')}
+                />
+              )}
+            </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.sendButton,
                 (!inputText.trim() ||
                   connectionStatus !== 'connected' ||
-                  isWaitingForResponse) &&
+                  isWaitingForResponse ||
+                  isRecording) &&
                   styles.sendButtonDisabled,
               ]}
               onPress={handleSendMessage}
               disabled={
                 !inputText.trim() ||
                 connectionStatus !== 'connected' ||
-                isWaitingForResponse
+                isWaitingForResponse ||
+                isRecording
               }>
-              <Text style={styles.sendButtonText}>Send</Text>
+              <Image
+                style={styles.icon}
+                source={require('../assets/icons/send.png')}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -457,10 +643,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
+  micButton: {
+    backgroundColor: '#ffd900',
+    borderRadius: 22,
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 8,
+  },
+  micButtonRecording: {
+    backgroundColor: '#FF3333',
+  },
+  micButtonDisabled: {
+    backgroundColor: '#CCCCCC',
+  },
+  micButtonText: {
+    fontSize: 20,
+  },
   sendButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    backgroundColor: '#ffd900',
+    padding: 8,
     borderRadius: 20,
     marginLeft: 8,
     justifyContent: 'center',
@@ -473,6 +675,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  icon: {
+    height: 24,
+    width: 24,
+    tintColor: 'white',
   },
 });
 

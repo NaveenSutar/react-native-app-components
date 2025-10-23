@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text, StyleSheet, ViewStyle} from 'react-native';
+import {View, Text, StyleSheet, ViewStyle, Image} from 'react-native';
 import {ChatMessage as ChatMessageType} from '../types/chat.types';
 
 interface ChatMessageProps {
@@ -9,6 +9,8 @@ interface ChatMessageProps {
 const ChatMessage: React.FC<ChatMessageProps> = ({message}) => {
   const isUser = message.role === 'user';
   const isLoading = message.isLoading && !message.final;
+  const hasAudio = message.hasAudio || false;
+  const isVoiceMessage = message.isVoiceMessage || false;
 
   return (
     <View
@@ -21,13 +23,36 @@ const ChatMessage: React.FC<ChatMessageProps> = ({message}) => {
           styles.messageBubble,
           isUser ? styles.userBubble : styles.assistantBubble,
         ]}>
-        <Text
-          style={[
-            styles.messageText,
-            isUser ? styles.userText : styles.assistantText,
-          ]}>
-          {message.text}
-        </Text>
+        {isVoiceMessage && isUser && (
+          <View style={styles.voiceIndicator}>
+            {/* <Text style={styles.voiceIcon}>🎤</Text> */}
+            <Text
+              style={[
+                styles.voiceLabel,
+                isUser ? styles.userText : styles.assistantText,
+              ]}>
+              Voice Message
+            </Text>
+          </View>
+        )}
+        {hasAudio && !isUser && (
+          <View style={styles.audioIndicator}>
+            <Image
+              style={styles.audioIcon}
+              source={require('../assets/icons/waves.png')}
+            />
+            <Text style={styles.audioLabel}>Playing audio...</Text>
+          </View>
+        )}
+        {message.text && message.text !== '[Voice Message]' && (
+          <Text
+            style={[
+              styles.messageText,
+              isUser ? styles.userText : styles.assistantText,
+            ]}>
+            {message.text}
+          </Text>
+        )}
         {isLoading && (
           <View style={styles.loadingContainer}>
             <View style={styles.loadingDot} />
@@ -93,6 +118,38 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 4,
     marginHorizontal: 8,
+  },
+  voiceIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  voiceIcon: {
+    fontSize: 16,
+    marginRight: 6,
+  },
+  voiceLabel: {
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  audioIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    borderRadius: 12,
+  },
+  audioIcon: {
+    marginRight: 6,
+    height: 12,
+    width: 12,
+    tintColor: '#007AFF',
+  },
+  audioLabel: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontStyle: 'italic',
   },
   loadingContainer: {
     flexDirection: 'row',

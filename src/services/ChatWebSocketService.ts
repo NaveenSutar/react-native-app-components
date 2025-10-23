@@ -1,6 +1,7 @@
 import {
   WebSocketMessage,
   TextMessage,
+  AudioMessage,
   ControlMessage,
   ConnectionStatus,
   ErrorCode,
@@ -18,8 +19,8 @@ export interface ChatWebSocketConfig {
 export class ChatWebSocketService {
   private ws: WebSocket | null = null;
   private config: ChatWebSocketConfig;
-  private pingInterval: NodeJS.Timeout | null = null;
-  private pongTimeout: NodeJS.Timeout | null = null;
+  private pingInterval: ReturnType<typeof setInterval> | null = null;
+  private pongTimeout: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 3000;
@@ -98,6 +99,37 @@ export class ChatWebSocketService {
         output: outputMode,
       },
     };
+
+    return this.send(message);
+  }
+
+  /**
+   * Send an audio message
+   */
+  sendAudio(audioBase64: string, sequence: number): boolean {
+    if (!this.isConnected()) {
+      console.error('[ChatWS] Cannot send - not connected');
+      return false;
+    }
+
+    // Check rate limiting
+    if (!this.checkRateLimit()) {
+      console.warn('[ChatWS] Rate limited - please slow down');
+      this.config.onError(new Error('Rate limited. Please wait a moment.'));
+      return false;
+    }
+
+    const message: AudioMessage = {
+      type: 'audio',
+      id: this.generateUUID(),
+      timestamp: Date.now(),
+      payload: {
+        audio: audioBase64,
+        sequence,
+      },
+    };
+
+    console.log('my message :', message);
 
     return this.send(message);
   }
@@ -195,6 +227,8 @@ export class ChatWebSocketService {
   private send(message: WebSocketMessage): boolean {
     try {
       const data = JSON.stringify(message);
+
+      console.log('my message :', data);
 
       if (this.isConnected()) {
         this.ws?.send(data);

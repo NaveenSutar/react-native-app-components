@@ -30,6 +30,17 @@ export interface TextMessage extends BaseMessage {
   payload: TextPayload;
 }
 
+// Audio Message Payloads
+export interface AudioPayload {
+  audio: string; // base64-encoded PCM blob
+  sequence: number;
+}
+
+export interface AudioMessage extends BaseMessage {
+  type: 'audio';
+  payload: AudioPayload;
+}
+
 // Control Message Payloads
 export interface ControlErrorPayload {
   code: string;
@@ -64,7 +75,11 @@ export interface EventMessage extends BaseMessage {
 }
 
 // Union type for all messages
-export type WebSocketMessage = TextMessage | ControlMessage | EventMessage;
+export type WebSocketMessage =
+  | TextMessage
+  | AudioMessage
+  | ControlMessage
+  | EventMessage;
 
 // Chat Message for UI
 export interface ChatMessage {
@@ -74,6 +89,9 @@ export interface ChatMessage {
   timestamp: number;
   final?: boolean;
   isLoading?: boolean;
+  audioChunks?: string[]; // base64 encoded audio chunks
+  hasAudio?: boolean; // indicates if message includes audio
+  isVoiceMessage?: boolean; // true if sent via voice, false if sent via text
 }
 
 // Connection Status
