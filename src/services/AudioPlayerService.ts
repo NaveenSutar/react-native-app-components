@@ -1,5 +1,6 @@
 import Sound from 'react-native-nitro-sound';
 import RNFS from 'react-native-fs';
+import {WavFileEncoder} from '../utils/WavFileEncoder';
 
 export interface AudioPlayerConfig {
   onPlaybackComplete?: () => void;
@@ -10,9 +11,15 @@ export class AudioPlayerService {
   private playbackQueue: string[] = [];
   private isPlaying = false;
   private config: AudioPlayerConfig;
+  private wavEncoder: WavFileEncoder;
 
   constructor(config: AudioPlayerConfig = {}) {
     this.config = config;
+    this.wavEncoder = new WavFileEncoder({
+      sampleRate: 16000, // 16kHz as per backend spec
+      numChannels: 1, // Mono
+      bitsPerSample: 16, // 16-bit
+    });
   }
 
   /**
@@ -65,14 +72,18 @@ export class AudioPlayerService {
       try {
         console.log('[AudioPlayer] Playing chunk...');
 
+        // Convert raw PCM to WAV format with proper headers
+        const wavBase64 = this.wavEncoder.pcmToWav(base64Audio);
+
         // Create a temporary file to store the audio data
-        // Use .pcm extension for raw PCM data or .wav for WAV format
         const tempFilePath = `${
           RNFS.CachesDirectoryPath
         }/temp_audio_${Date.now()}.wav`;
 
-        // Write the base64 audio to a file
-        await RNFS.writeFile(tempFilePath, base64Audio, 'base64');
+        // Write the WAV audio to a file
+        await RNFS.writeFile(tempFilePath, wavBase64, 'base64');
+
+        console.log('[AudioPlayer] WAV file created:', tempFilePath);
 
         // Set up playback end listener
         Sound.addPlaybackEndListener(() => {
