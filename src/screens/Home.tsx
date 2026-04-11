@@ -122,6 +122,12 @@ const Home = () => {
       title: 'Smart Chat',
       screen: 'SmartChat',
     },
+    {
+      id: 19,
+      icon: require('../assets/icons/background.png'),
+      title: 'Background Location',
+      screen: 'BackGroundLocation',
+    },
   ];
 
   const renderItem = ({

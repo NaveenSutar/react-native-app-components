@@ -21,6 +21,7 @@ import StickCenterCards from '../components/StickCenterCards';
 import StickyHeaderCardsVersionOne from '../components/StickyHeaderCardsVersionOne';
 import StickyHeaderCardsVersionTwo from '../components/StickyHeaderCardsVersionTwo';
 import SmartChat from '../components/SmartChat';
+import BackGroundLocation from '../components/BackGroundLocation';
 
 const Stack = createNativeStackNavigator();
 
@@ -62,6 +63,7 @@ function AppStack() {
           component={StickyHeaderCardsVersionTwo}
         />
         <Stack.Screen name="SmartChat" component={SmartChat} />
+        <Stack.Screen name="BackGroundLocation" component={BackGroundLocation} />
       </Stack.Navigator>
     </View>
   );
